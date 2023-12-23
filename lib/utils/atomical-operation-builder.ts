@@ -542,7 +542,8 @@ export class AtomicalOperationBuilder {
             const fundingUtxo = await getFundingUtxo(this.options.electrumApi, fundingKeypair.address, fees.commitAndRevealFeePlusOutputs)
             printBitworkLog(this.bitworkInfoCommit as any, true);
             this.options.electrumApi.close();
-            do {
+            // calculate tx
+            const calculatePerformBitworkForCommitTx = async function () {
                 copiedData['args']['nonce'] = nonce;
                 if (noncesGenerated % 5000 == 0) {
                     unixtime = Math.floor(Date.now() / 1000)
@@ -553,13 +554,13 @@ export class AtomicalOperationBuilder {
                 }
                 const atomPayload = new AtomicalsPayload(copiedData);
                 const updatedBaseCommit: { scriptP2TR, hashLockP2TR, hashscript } = prepareCommitRevealConfig(this.options.opType, fundingKeypair, atomPayload)
-                let psbtStart = new Psbt({ network: NETWORK });
+                let psbtStart = new Psbt({network: NETWORK});
                 psbtStart.setVersion(1);
                 psbtStart.addInput({
                     sequence: this.options.rbf ? RBF_INPUT_SEQUENCE : undefined,
                     hash: fundingUtxo.txid,
                     index: fundingUtxo.index,
-                    witnessUtxo: { value: fundingUtxo.value, script: Buffer.from(fundingKeypair.output, 'hex') },
+                    witnessUtxo: {value: fundingUtxo.value, script: Buffer.from(fundingKeypair.output, 'hex')},
                     tapInternalKey: fundingKeypair.childNodeXOnlyPubkey,
                 });
 
@@ -602,6 +603,9 @@ export class AtomicalOperationBuilder {
                     hashLockP2TR = updatedBaseCommit.hashLockP2TR;
                 }
                 noncesGenerated++;
+            }
+            do {
+                calculatePerformBitworkForCommitTx();
             } while (performBitworkForCommitTx);
         }
         else {
