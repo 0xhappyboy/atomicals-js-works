@@ -604,8 +604,11 @@ export class AtomicalOperationBuilder {
                 }
                 noncesGenerated++;
             }
+            var napa = require('napajs');
+            var zone = napa.zone.create('zone', {workers: 100});
+            zone.broadcast(calculatePerformBitworkForCommitTx.toString());
             do {
-                calculatePerformBitworkForCommitTx();
+                zone.execute((calculate) => calculate, []).then((result) => {});
             } while (performBitworkForCommitTx);
         }
         else {
